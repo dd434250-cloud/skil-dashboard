@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
@@ -40,8 +41,7 @@
         .score-low { background-color: #93c5fd; color: #1e3a8a; }
         .topic-sep { background-color: #1e293b; font-weight: 900; color: white; grid-column: span 9; text-transform: uppercase; padding: 1rem; text-align: left; }
         input.edit-input { width: 100%; height: 100%; border: 2px solid #3b82f6; text-align: center; font-size: 0.75rem; border-radius: 6px; outline: none; background-color: #f0f9ff; }
-        /* ID 與名稱編輯樣式 */
-        input.edit-id-input { width: 40px; border: 1px dashed #94a3b8; padding: 2px; font-size: 9px; border-radius: 4px; outline: none; text-align: center; margin-right: 8px; }
+        input.edit-id-input { width: 45px; border: 1px dashed #94a3b8; padding: 2px; font-size: 9px; border-radius: 4px; outline: none; text-align: center; margin-right: 8px; }
         input.edit-name-input { flex: 1; border: 1px dashed #3b82f6; padding: 2px 4px; font-size: 0.75rem; border-radius: 4px; outline: none; background-color: #fff; color: #1e293b; font-weight: 700; }
         
         .sidebar-link.active { background-color: #ffffff; color: #2563eb; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
@@ -58,7 +58,7 @@
                 <span class="text-3xl">📊</span>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight text-white leading-none text-left">管理決策系統</h1>
-                    <p class="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest text-left">Decision Support SPA</p>
+                    <p class="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest text-left">Real-time Cloud Sync</p>
                 </div>
             </div>
             <nav class="space-y-2 text-left">
@@ -75,14 +75,16 @@
         </div>
         
         <div class="mt-auto p-6 border-t border-slate-800 space-y-2">
+            <div id="sync-indicator" class="text-[10px] text-rose-500 font-bold mb-2 flex items-center gap-2">
+                ● 離線中 / Offline
+            </div>
             <input type="file" id="import-input" class="hidden" accept=".json,.xlsx" onchange="handleImport(event)">
             <button onclick="document.getElementById('import-input').click()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-bold py-2 rounded-lg transition-all">
-                匯入數據備份 / Import
+                匯入備份 (JSON/Excel)
             </button>
             <button onclick="exportToExcel()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-2 rounded-lg transition-all">
                 下載 Excel 備份 / Export
             </button>
-            <div class="text-[9px] text-slate-500 font-medium italic text-center">系統狀態：數據儲存於本地</div>
         </div>
     </aside>
 
@@ -91,7 +93,7 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
                 <div class="text-left">
                     <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight text-left">電氣技能考核管理總結</h2>
-                    <p class="text-slate-500 mt-1 italic text-left">報表生成日期：<span id="current-date">--</span></p>
+                    <p class="text-slate-500 mt-1 italic text-left">最後同步日期：<span id="current-date">--</span></p>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="window.print()" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50">列印</button>
@@ -99,7 +101,6 @@
                 </div>
             </div>
 
-            <!-- KPI 指標 -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-white p-6 rounded-2xl card-shadow border-t-4 border-blue-500 text-left">
                     <div class="text-slate-400 text-xs font-bold uppercase mb-1">整體進度 Progress</div>
@@ -130,14 +131,13 @@
                     <div id="skill-gaps" class="space-y-4 flex-1 text-left"></div>
                     <div class="bg-amber-50 p-4 rounded-xl mt-4 border border-amber-100 text-left">
                         <h4 class="text-xs font-bold text-amber-800 uppercase text-left">管理建議 Recommendation</h4>
-                        <p class="text-xs text-amber-700 mt-1 text-left" id="mgr-suggestion">正在分析數據中...</p>
+                        <p class="text-xs text-amber-700 mt-1 text-left" id="mgr-suggestion">雲端連接中...</p>
                     </div>
                 </div>
             </div>
 
-            <!-- 人員進度追蹤 -->
             <div class="bg-white p-6 rounded-2xl card-shadow">
-                <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">人員考核參與度與得分概覽 Personnel Progress</h3>
+                <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">人員考核參與度與得分概覽</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead>
@@ -155,10 +155,9 @@
             </div>
         </section>
 
-        <!-- 技能矩陣 (可直接編輯 ID 與名稱) -->
         <section id="tab-matrix" class="hidden space-y-6">
             <div class="flex justify-between items-end">
-                <h2 class="text-2xl font-bold text-left">技能矩陣編輯器 (可編輯 ID 與名稱)</h2>
+                <h2 class="text-2xl font-bold text-left">技能矩陣編輯器 (實時線上同步)</h2>
                 <button id="edit-toggle-btn" onclick="toggleEditMode()" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold transition-all hover:bg-slate-800">
                     <span id="edit-text">編輯模式</span>
                 </button>
@@ -168,7 +167,6 @@
             </div>
         </section>
 
-        <!-- 深度分析 -->
         <section id="tab-analytics" class="hidden space-y-6 text-left">
             <div class="bg-white p-8 rounded-2xl card-shadow">
                 <h3 class="font-bold text-slate-700 mb-8 text-left">各主題加權成熟度百分比</h3>
@@ -191,6 +189,16 @@
     </div>
 
     <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'electrical-skills-master';
+
         const technicians = ["Todd", "Jacob", "Jake", "Stevenson", "Tyler", "Kevin", "LEO", "Andy"];
         
         // 初始預設結構
@@ -217,53 +225,85 @@
             "3.3": "現場故障排除測試-故障位置 (初階)"
         };
 
-        const DB_KEY = 'skill_db_data_v6';
-        const MAP_KEY = 'skill_db_map_v6';
-        const TOPIC_KEY = 'skill_db_topics_v6';
-
         window.appData = {};
         window.itemMapping = {}; 
         window.topics = [];
-        window.state = { currentTab: 'report', isEditMode: false };
+        window.state = { currentTab: 'report', isEditMode: false, user: null };
 
-        const loadLocal = () => {
-            const savedData = localStorage.getItem(DB_KEY);
-            const savedMap = localStorage.getItem(MAP_KEY);
-            const savedTopics = localStorage.getItem(TOPIC_KEY);
-            
-            // 載入結構
-            if (savedTopics) window.topics = JSON.parse(savedTopics);
-            else window.topics = JSON.parse(JSON.stringify(defaultTopics));
-
-            // 載入映射
-            if (savedMap) window.itemMapping = JSON.parse(savedMap);
-            else {
-                window.itemMapping = {...defaultItemMapping};
-                // 補全剩餘待定項
-                window.topics.forEach(t => t.items.forEach(id => {
-                    if(!window.itemMapping[id]) window.itemMapping[id] = `待定項目 ${id}`;
-                }));
+        // 雲端同步初始化 (Rule 3)
+        const initSystem = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
             }
-
-            // 載入成績
-            if (savedData) window.appData = JSON.parse(savedData);
-            else {
-                Object.values(window.itemMapping).forEach(name => {
-                    window.appData[name] = {};
-                    technicians.forEach(t => window.appData[name][t] = "待測");
-                });
-                seedInitialData(window.appData);
-            }
-            document.getElementById('current-date').textContent = new Date().toLocaleDateString();
-            updateUI();
         };
 
-        const seedInitialData = (records) => {
-            const n13 = window.itemMapping["1.3"]; if(n13) records[n13] = { Todd: 88, Jacob: 88, Jake: 55, Stevenson: 88, Tyler: 90, Kevin: 100, LEO: 80, Andy: 100 };
-            const n23 = window.itemMapping["2.3"]; if(n23) records[n23] = { Todd: 75, Jacob: 70, Jake: 25, Stevenson: 70, Tyler: 75, Kevin: 100, LEO: 70, Andy: 100 };
-            const n21 = window.itemMapping["2.1"]; if(n21) records[n21] = { Todd: 27, Jacob: 52, Jake: 33, Stevenson: 68, Tyler: 58, Kevin: 80, LEO: 65, Andy: 85 };
-            const n11 = window.itemMapping["1.1"]; if(n11) records[n11] = { Todd: "X", Jacob: "X", Jake: "X", Stevenson: "✓", Tyler: "X", Kevin: "✓", LEO: "✓", Andy: "✓" };
-            const n25 = window.itemMapping["2.5"]; if(n25) records[n25] = { Todd: "✓", Jacob: "✓", Jake: "X", Stevenson: "✓", Tyler: "✓", Kevin: "✓", LEO: "待測", Andy: "✓" };
+        onAuthStateChanged(auth, (user) => {
+            window.state.user = user;
+            if (user) {
+                document.getElementById('sync-indicator').textContent = "● 雲端連線中 / Live";
+                document.getElementById('sync-indicator').className = "text-[10px] text-emerald-500 font-bold mb-2 flex items-center gap-2";
+                setupFirestoreSync();
+            }
+        });
+
+        const setupFirestoreSync = () => {
+            // 採用 6 段路徑規範 (Rule 1)
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'skill_storage', 'v1');
+            onSnapshot(docRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    window.appData = data.appData || {};
+                    window.itemMapping = data.itemMapping || {};
+                    window.topics = data.topics || [];
+                    document.getElementById('current-date').textContent = new Date(data.lastUpdate).toLocaleString();
+                } else {
+                    // 若雲端無資料，則載入預設值並推送
+                    initializeDefaultData();
+                }
+                updateUI();
+            }, (error) => console.error("Firestore Sync Error:", error));
+        };
+
+        const initializeDefaultData = () => {
+            window.topics = JSON.parse(JSON.stringify(defaultTopics));
+            window.itemMapping = {...defaultItemMapping};
+            window.topics.forEach(t => t.items.forEach(id => {
+                if(!window.itemMapping[id]) window.itemMapping[id] = `待定項目 ${id}`;
+            }));
+            
+            Object.values(window.itemMapping).forEach(name => {
+                window.appData[name] = {};
+                technicians.forEach(t => window.appData[name][t] = "待測");
+            });
+
+            // 填入初始數據 (還原圖片內容)
+            const n13 = "basic concepts&definitions基本電學概念";
+            window.appData[n13] = { Todd: 88, Jacob: 88, Jake: 55, Stevenson: 88, Tyler: 90, Kevin: 100, LEO: 80, Andy: 100 };
+            const n23 = "General Electrical Troubleshooting一般電器故障排除";
+            window.appData[n23] = { Todd: 75, Jacob: 70, Jake: 25, Stevenson: 70, Tyler: 75, Kevin: 100, LEO: 70, Andy: 100 };
+            const n21 = "motors&Electrical maintenance(電機電氣維護)(二次平均)";
+            window.appData[n21] = { Todd: 27, Jacob: 52, Jake: 33, Stevenson: 68, Tyler: 58, Kevin: 80, LEO: 65, Andy: 85 };
+            const n11 = "Wiring Configuration - Implementation接線配置-實作";
+            window.appData[n11] = { Todd: "X", Jacob: "X", Jake: "X", Stevenson: "✓", Tyler: "X", Kevin: "✓", LEO: "✓", Andy: "✓" };
+            
+            saveToCloud();
+        };
+
+        const saveToCloud = async () => {
+            if (!window.state.user) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'skill_storage', 'v1');
+            try {
+                await setDoc(docRef, {
+                    topics: window.topics,
+                    itemMapping: window.itemMapping,
+                    appData: window.appData,
+                    lastUpdate: new Date().toISOString()
+                });
+            } catch (e) {
+                console.error("Cloud Save Failed:", e);
+            }
         };
 
         const calculateStats = () => {
@@ -326,7 +366,7 @@
                     </td>
                     <td class="py-4 font-bold text-slate-600 text-base text-left">${rawAvg}%</td>
                     <td class="py-4 font-black text-blue-600 text-lg text-left">${t.weightSum.toFixed(1)}</td>
-                    <td class="py-4 text-xs text-slate-400 text-right">${t.doneCount}/${t.totalCount} 項已完成</td>
+                    <td class="py-4 text-xs text-slate-400 text-right font-medium">${t.doneCount}/${t.totalCount} 項已完成</td>
                 </tr>`}).join('');
             renderCharts(s.topics);
         };
@@ -368,7 +408,7 @@
             });
         };
 
-        window.toggleEditMode = () => {
+        window.toggleEditMode = async () => {
             if (window.state.isEditMode) {
                 // 儲存邏輯
                 const idInputs = document.querySelectorAll('.edit-id-input');
@@ -379,32 +419,26 @@
                 const newItemMapping = {};
                 const newAppData = {};
 
-                // 1. 更新 ID 結構
                 idInputs.forEach(input => {
                     const { tIdx, iIdx } = input.dataset;
                     newTopics[tIdx].items[iIdx] = input.value.trim();
                 });
 
-                // 2. 更新 名稱映射 與 成績遷移
-                nameInputs.forEach(input => {
+                nameInputs.forEach((input, idx) => {
                     const oldId = input.dataset.itemId;
-                    const newId = idInputs[Array.from(nameInputs).indexOf(input)].value.trim();
+                    const newId = idInputs[idx].value.trim();
                     const oldName = window.itemMapping[oldId];
                     const newName = input.value.trim() || oldName;
-                    
                     newItemMapping[newId] = newName;
                     newAppData[newName] = window.appData[oldName] || {};
                 });
 
-                // 3. 更新 各人員分數
                 scoreInputs.forEach(i => {
                     const { tech, itemName } = i.dataset;
-                    // 找出該項目現在對應的新名稱
-                    const targetName = nameInputs[Array.from(nameInputs).findIndex(ni => ni.value.trim() === itemName || ni.dataset.itemId === Object.keys(window.itemMapping).find(k => window.itemMapping[k] === itemName))].value.trim();
+                    const targetName = Array.from(nameInputs).find(ni => ni.value.trim() === itemName || ni.dataset.itemId === Object.keys(window.itemMapping).find(k => window.itemMapping[k] === itemName))?.value.trim() || itemName;
                     
                     let v = i.value.trim();
                     if (!newAppData[targetName]) newAppData[targetName] = {};
-                    
                     if (v === "" || v === "待測") newAppData[targetName][tech] = "待測";
                     else if (v === "✓" || v.toLowerCase() === "v") newAppData[targetName][tech] = "✓";
                     else if (v === "X" || v.toLowerCase() === "x") newAppData[targetName][tech] = "X";
@@ -415,11 +449,9 @@
                 window.itemMapping = newItemMapping;
                 window.appData = newAppData;
 
-                localStorage.setItem(TOPIC_KEY, JSON.stringify(window.topics));
-                localStorage.setItem(MAP_KEY, JSON.stringify(window.itemMapping));
-                localStorage.setItem(DB_KEY, JSON.stringify(window.appData));
-                
-                window.state.isEditMode = false; document.getElementById('edit-text').textContent = '編輯模式';
+                await saveToCloud();
+                window.state.isEditMode = false; 
+                document.getElementById('edit-text').textContent = '編輯模式';
             } else { 
                 window.state.isEditMode = true; 
                 document.getElementById('edit-text').textContent = '儲存變更'; 
@@ -427,21 +459,42 @@
             renderMatrix();
         };
 
+        // 修復 Excel 匯入功能
         window.handleImport = (e) => {
             const f = e.target.files[0]; if(!f) return;
-            const reader = new FileReader(); reader.onload = (ev) => {
+            const reader = new FileReader(); 
+            reader.onload = (ev) => {
                 try {
-                    const imp = JSON.parse(ev.target.result);
-                    if(imp.topics) window.topics = imp.topics;
-                    if(imp.itemMapping) window.itemMapping = imp.itemMapping;
-                    if(imp.appData) window.appData = imp.appData;
-                    localStorage.setItem(TOPIC_KEY, JSON.stringify(window.topics));
-                    localStorage.setItem(MAP_KEY, JSON.stringify(window.itemMapping));
-                    localStorage.setItem(DB_KEY, JSON.stringify(window.appData));
-                    updateUI(); alert("匯入成功");
-                } catch(err) { alert("匯入失敗，請檢查格式"); }
+                    if (f.name.endsWith('.xlsx')) {
+                        const data = new Uint8Array(ev.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                        
+                        // [修復] Excel 匯入時重新對應資料庫
+                        const newAppData = {};
+                        jsonData.forEach(row => {
+                            const itemName = row["項目名稱"];
+                            if (itemName) {
+                                newAppData[itemName] = {};
+                                technicians.forEach(tech => {
+                                    newAppData[itemName][tech] = row[tech] !== undefined ? row[tech] : "待測";
+                                });
+                            }
+                        });
+                        window.appData = { ...window.appData, ...newAppData };
+                        saveToCloud();
+                        alert("Excel 匯入成功並同步至雲端");
+                    } else {
+                        const imp = JSON.parse(ev.target.result);
+                        if(imp.appData) window.appData = imp.appData;
+                        saveToCloud();
+                        alert("JSON 匯入成功並同步至雲端");
+                    }
+                } catch(err) { alert("匯入失敗，請檢查檔案格式"); console.error(err); }
             };
-            reader.readAsText(f);
+            if (f.name.endsWith('.xlsx')) reader.readAsArrayBuffer(f);
+            else reader.readAsText(f);
         };
 
         window.exportToExcel = () => {
@@ -455,7 +508,7 @@
                 });
             });
             const ws = XLSX.utils.json_to_sheet(flat); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Skills");
-            XLSX.writeFile(wb, "Skill_Data_Backup.xlsx");
+            XLSX.writeFile(wb, "Skill_Data_Export.xlsx");
         };
 
         window.switchTab = (t) => {
@@ -480,11 +533,11 @@
             if (window.state.currentTab === 'matrix') renderMatrix();
             if (window.state.currentTab === 'analytics') {
                 const ctx = document.getElementById('topicChart').getContext('2d'); if(charts.topic) charts.topic.destroy();
-                charts.topic = new Chart(ctx, { type: 'bar', data: { labels: s.topics.map(t => t.cn), datasets: [{ label: '成熟度 %', data: s.topics.map(t => t.avg), backgroundColor: '#3b82f6' }] }, options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } } });
+                charts.topic = new Chart(ctx, { type: 'bar', data: { labels: s.topics.map(t => t.cn), datasets: [{ label: '成熟度 %', data: s.topics.map(t => t.avg), backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } } });
             }
         };
 
-        loadLocal();
+        window.onload = initSystem;
     </script>
 </body>
 </html>
