@@ -49,9 +49,17 @@
         #notification { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 1000; padding: 1rem 1.5rem; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); font-weight: bold; }
         .notify-success { background-color: #10b981; color: white; }
         .notify-error { background-color: #ef4444; color: white; }
+        #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="text-slate-900 text-left">
+
+    <div id="loading-overlay">
+        <div class="spinner mb-4"></div>
+        <div class="font-bold text-slate-700">正在執行雲端數據同步...</div>
+    </div>
 
     <div id="notification"></div>
 
@@ -61,7 +69,7 @@
                 <span class="text-3xl">📊</span>
                 <div>
                     <h1 class="text-lg font-bold tracking-tight text-white leading-none">管理決策系統</h1>
-                    <p class="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Real-time Cloud Sync</p>
+                    <p class="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest">ID-Driven Sync v2.4</p>
                 </div>
             </div>
             <nav class="space-y-2">
@@ -77,13 +85,13 @@
             </nav>
         </div>
         
-        <div class="mt-auto p-6 border-t border-slate-800 space-y-2">
+        <div class="mt-auto p-6 border-t border-slate-800 space-y-2 text-left">
             <div id="sync-indicator" class="text-[10px] text-rose-500 font-bold mb-2 flex items-center gap-2">
-                ● 正在嘗試連線...
+                ● 正在連線...
             </div>
             <input type="file" id="import-input" class="hidden" accept=".xlsx" onchange="handleImport(event)">
             <button onclick="document.getElementById('import-input').click()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-bold py-2 rounded-lg transition-all">
-                匯入 Excel 成績單
+                匯入大批量修改 (ID 匹配)
             </button>
             <button onclick="exportToExcel()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-2 rounded-lg transition-all">
                 下載資料庫備份
@@ -96,7 +104,7 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
                 <div>
                     <h2 class="text-3xl font-extrabold text-slate-800 tracking-tight">電氣技能考核管理總結</h2>
-                    <p class="text-slate-500 mt-1 italic">雲端數據更新於：<span id="current-date">--</span></p>
+                    <p class="text-slate-500 mt-1 italic">同步狀態：<span id="current-date">正在讀取...</span></p>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="window.print()" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50">列印</button>
@@ -106,20 +114,20 @@
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-left">
                 <div class="bg-white p-6 rounded-2xl border-t-4 border-blue-500 shadow-sm">
-                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">整體進度 Progress</div>
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">整體進度</div>
                     <div class="text-4xl font-black text-slate-800" id="stat-progress">--%</div>
                     <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3"><div id="progress-bar-inner" class="bg-blue-500 h-full rounded-full transition-all"></div></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border-t-4 border-emerald-500 shadow-sm">
-                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">團隊平均分 Team Avg</div>
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">團隊平均分</div>
                     <div class="text-4xl font-black text-slate-800" id="stat-avg-score">--</div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border-t-4 border-indigo-500 shadow-sm">
-                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">實作達標率 Practical</div>
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">實作達標率</div>
                     <div class="text-4xl font-black text-slate-800" id="stat-practical">--%</div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl border-t-4 border-rose-500 shadow-sm">
-                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">識別弱項 Gaps</div>
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">關鍵缺口數</div>
                     <div class="text-4xl font-black text-rose-600" id="stat-attention">--</div>
                 </div>
             </div>
@@ -130,11 +138,11 @@
                     <div class="chart-container"><canvas id="radarChartSummary"></canvas></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border flex flex-col">
-                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">戰略性技能缺口 (僅列已測低分項)</h3>
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">戰略性技能缺口</h3>
                     <div id="skill-gaps" class="space-y-4 flex-1"></div>
-                    <div class="bg-amber-50 p-4 rounded-xl mt-4 border border-amber-100">
-                        <h4 class="text-xs font-bold text-amber-800 uppercase">管理建議 Recommendation</h4>
-                        <p class="text-xs text-amber-700 mt-1" id="mgr-suggestion">正在與雲端資料庫連線中...</p>
+                    <div class="bg-amber-50 p-4 rounded-xl mt-4 border border-amber-100 text-left">
+                        <h4 class="text-xs font-bold text-amber-800 uppercase">管理建議</h4>
+                        <p class="text-xs text-amber-700 mt-1" id="mgr-suggestion">數據同步中...</p>
                     </div>
                 </div>
             </div>
@@ -147,9 +155,9 @@
                             <tr class="text-slate-400 uppercase text-[10px] font-bold border-b">
                                 <th class="pb-3">技術人員 Name</th>
                                 <th class="pb-3">完成率</th>
-                                <th class="pb-3">已考項平均 %</th>
+                                <th class="pb-3">已考平均 %</th>
                                 <th class="pb-3">累積加權分</th>
-                                <th class="pb-3 text-right">備註</th>
+                                <th class="pb-3 text-right">狀態備註</th>
                             </tr>
                         </thead>
                         <tbody id="personnel-status-body"></tbody>
@@ -160,7 +168,7 @@
 
         <section id="tab-matrix" class="hidden space-y-6 text-left">
             <div class="flex justify-between items-end">
-                <h2 class="text-2xl font-bold">技能矩陣編輯器 (實時線上同步)</h2>
+                <h2 class="text-2xl font-bold">技能矩陣編輯器 (已整合圖片數據)</h2>
                 <button id="edit-toggle-btn" onclick="toggleEditMode()" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold hover:bg-slate-800 transition-all">
                     <span id="edit-text">編輯模式</span>
                 </button>
@@ -171,7 +179,7 @@
         </section>
 
         <section id="tab-analytics" class="hidden space-y-6 text-left">
-            <div class="bg-white p-8 rounded-2xl shadow-sm border">
+            <div class="bg-white p-8 rounded-2xl shadow-sm border text-left">
                 <h3 class="font-bold text-slate-700 mb-8">各主題加權成熟度百分比</h3>
                 <div class="chart-container"><canvas id="topicChart"></canvas></div>
             </div>
@@ -181,7 +189,7 @@
     <div id="reportModal" class="modal">
         <div class="modal-content text-left">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-black text-slate-800">每週管理簡報內容</h2>
+                <h2 class="text-2xl font-black text-slate-800">管理報告內容匯總</h2>
                 <button onclick="closeReportModal()" class="text-slate-400 text-3xl">&times;</button>
             </div>
             <div id="report-text" class="bg-slate-50 p-8 rounded-2xl text-slate-700 text-sm font-mono whitespace-pre-wrap leading-relaxed"></div>
@@ -196,7 +204,6 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 套用您提供的 Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyCQpNxUgevyoAWrPW_BB8-n5IUcsOsoSYY",
             authDomain: "skill-27a23.firebaseapp.com",
@@ -214,28 +221,6 @@
 
         const technicians = ["Todd", "Jacob", "Jake", "Stevenson", "Tyler", "Kevin", "LEO", "Andy"];
         
-        const defaultTopics = [
-            { id: 1, cn: "接線圖閱讀", weight: 0.15, items: ["1.1", "1.2", "1.3", "1.4", "1.5"] },
-            { id: 2, cn: "通用電氣故障排除", weight: 0.15, items: ["2.1", "2.2", "2.3", "2.4", "2.5"] },
-            { id: 3, cn: "控制系統故障排除和維修", weight: 0.15, items: ["3.1", "3.2", "3.3", "3.4", "3.5"] },
-            { id: 4, cn: "PLC/DCS 理解", weight: 0.10, items: ["4.1", "4.2", "4.3", "4.4", "4.5"] },
-            { id: 5, cn: "輕微的程序操作", weight: 0.10, items: ["5.1", "5.2", "5.3", "5.4", "5.5"] },
-            { id: 6, cn: "重大程式修改", weight: 0.15, items: ["6.1", "6.2", "6.3", "6.4", "6.5"] },
-            { id: 7, cn: "導管彎曲和佈局", weight: 0.10, items: ["7.1", "7.2", "7.3", "7.4", "7.5"] },
-            { id: 8, cn: "線路檢查標準", weight: 0.10, items: ["8.1", "8.2", "8.3", "8.4", "8.5"] }
-        ];
-
-        const defaultItemMapping = {
-            "1.1": "Wiring Configuration - Implementation接線配置-實作",
-            "1.3": "basic concepts&definitions基本電學概念",
-            "2.1": "motors&Electrical maintenance(電機電氣維護)(二次平均)",
-            "2.3": "General Electrical Troubleshooting一般電器故障排除",
-            "2.4": "Instrument Usage儀器使用",
-            "2.5": "Motor Troubleshooting馬達故障排除-實作",
-            "3.2": "現場故障排除測試-溫度異常 (初階)",
-            "3.3": "現場故障排除測試-故障位置 (初階)"
-        };
-
         window.appData = {};
         window.itemMapping = {}; 
         window.topics = [];
@@ -249,75 +234,102 @@
             setTimeout(() => el.style.display = 'none', 5000);
         };
 
-        // 初始化連線
-        const initSystem = async () => {
-            try {
-                await signInAnonymously(auth);
-            } catch (e) {
-                console.error("Firebase Auth Error:", e);
-                const mgrMsg = document.getElementById('mgr-suggestion');
-                if (e.code === 'auth/configuration-not-found' || e.code === 'auth/operation-not-allowed') {
-                    notify("連線失敗：Provider 未啟用", "error");
-                    mgrMsg.innerHTML = "<span class='text-rose-600 font-bold'>關鍵錯誤：尚未啟用匿名登入功能。</span>";
-                } else {
-                    notify("系統連線異常", "error");
-                }
-            }
+        const showLoading = (show) => { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; };
+
+        window.onload = async () => {
+            signInAnonymously(auth).catch(e => notify("Firebase 匿名認證未啟用", "error"));
         };
 
         onAuthStateChanged(auth, (user) => {
             window.state.user = user;
             if (user) {
-                const indicator = document.getElementById('sync-indicator');
-                indicator.textContent = "● 雲端連線正常 / Live";
-                indicator.className = "text-[10px] text-emerald-500 font-bold mb-2 flex items-center gap-2";
+                document.getElementById('sync-indicator').textContent = "● 雲端連線正常 (Live)";
+                document.getElementById('sync-indicator').className = "text-[10px] text-emerald-500 font-bold mb-2 flex items-center gap-2";
                 setupFirestoreSync();
             }
         });
 
         const setupFirestoreSync = () => {
-            // [確保] 使用 6 段式路徑
-            const docRef = doc(db, 'artifacts', projectId, 'public', 'data', 'competency_system', 'live_data');
+            const docRef = doc(db, 'artifacts', projectId, 'public', 'data', 'skill_assessment', 'live_v1');
             onSnapshot(docRef, (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.data();
                     window.appData = data.appData || {};
                     window.itemMapping = data.itemMapping || {};
                     window.topics = data.topics || [];
-                    document.getElementById('current-date').textContent = new Date(data.lastUpdate).toLocaleString();
-                    updateUI();
+                    document.getElementById('current-date').textContent = "更新於: " + new Date(data.lastUpdate).toLocaleString();
                 } else {
-                    initializeCloudData();
+                    initializeCloudDefaults();
                 }
-            }, (error) => {
-                console.error("Firestore Error:", error);
-                notify("數據讀取失敗", "error");
-            });
+                updateUI();
+            }, (error) => notify("同步讀取失敗", "error"));
         };
 
-        const initializeCloudData = () => {
-            window.topics = JSON.parse(JSON.stringify(defaultTopics));
-            window.itemMapping = {...defaultItemMapping};
-            window.topics.forEach(t => t.items.forEach(id => {
-                if(!window.itemMapping[id]) window.itemMapping[id] = `待定項目 ${id}`;
-            }));
+        const initializeCloudDefaults = () => {
+            // [確保] 初始化結構
+            window.topics = [
+                { id: 1, cn: "接線圖閱讀", weight: 0.15, items: ["1.1", "1.2", "1.3", "1.4", "1.5"] },
+                { id: 2, cn: "通用電氣故障排除", weight: 0.15, items: ["2.1", "2.2", "2.3", "2.4", "2.5"] },
+                { id: 3, cn: "控制系統故障維修", weight: 0.15, items: ["3.1", "3.2", "3.3", "3.4", "3.5"] },
+                { id: 4, cn: "PLC/DCS 理解", weight: 0.10, items: ["4.1", "4.2", "4.3", "4.4", "4.5"] },
+                { id: 5, cn: "輕微程序操作", weight: 0.10, items: ["5.1", "5.2", "5.3", "5.4", "5.5"] },
+                { id: 6, cn: "重大程式修改", weight: 0.15, items: ["6.1", "6.2", "6.3", "6.4", "6.5"] },
+                { id: 7, cn: "導管彎曲佈局", weight: 0.10, items: ["7.1", "7.2", "7.3", "7.4", "7.5"] },
+                { id: 8, cn: "線路檢查標準", weight: 0.10, items: ["8.1", "8.2", "8.3", "8.4", "8.5"] }
+            ];
+            window.itemMapping = {
+                "1.1": "Wiring Configuration - Implementation接線配置-實作",
+                "1.2": "電工技師學徒考試",
+                "1.3": "basic concepts&definitions基本電學概念",
+                "2.1": "motors&Electrical maintenance(電機電氣維護)(二次平均)",
+                "2.2": "系統及馬達檢查",
+                "2.3": "General Electrical Troubleshooting一般電器故障排除",
+                "2.4": "Instrument Usage儀器使用",
+                "2.5": "Motor Troubleshooting馬達故障排除-實作",
+                "3.1": "現場故障測試-真空",
+                "3.2": "現場故障排除測試-溫度異常 (初階)",
+                "3.3": "現場故障排除測試-故障位置 (初階)",
+                "3.4": "現場故障測試-電機",
+                "3.5": "安全連鎖意識"
+            };
+            window.topics.forEach(t => t.items.forEach(id => { if(!window.itemMapping[id]) window.itemMapping[id] = `待定項目 ${id}`; }));
+            
             Object.values(window.itemMapping).forEach(name => {
                 window.appData[name] = {};
                 technicians.forEach(t => window.appData[name][t] = "待測");
             });
 
-            // 還原原始成績
-            window.appData["basic concepts&definitions基本電學概念"] = { Todd: 88, Jacob: 88, Jake: 55, Stevenson: 88, Tyler: 90, Kevin: 100, LEO: 80, Andy: 100 };
-            window.appData["General Electrical Troubleshooting一般電器故障排除"] = { Todd: 75, Jacob: 70, Jake: 25, Stevenson: 70, Tyler: 75, Kevin: 100, LEO: 70, Andy: 100 };
-            window.appData["motors&Electrical maintenance(電機電氣維護)(二次平均)"] = { Todd: 27, Jacob: 52, Jake: 33, Stevenson: 68, Tyler: 58, Kevin: 80, LEO: 65, Andy: 85 };
-            window.appData["Wiring Configuration - Implementation接線配置-實作"] = { Todd: "X", Jacob: "X", Jake: "X", Stevenson: "✓", Tyler: "X", Kevin: "✓", LEO: "✓", Andy: "✓" };
+            // [確保] 同步圖片中的精確數據
+            const n13 = "basic concepts&definitions基本電學概念";
+            window.appData[n13] = { Todd: 88, Jacob: 88, Jake: 55, Stevenson: 88, Tyler: 90, Kevin: 100, LEO: 80, Andy: 100 };
             
+            const n23 = "General Electrical Troubleshooting一般電器故障排除";
+            window.appData[n23] = { Todd: 75, Jacob: 70, Jake: 25, Stevenson: 70, Tyler: 75, Kevin: 100, LEO: 70, Andy: 100 };
+            
+            const n21 = "motors&Electrical maintenance(電機電氣維護)(二次平均)";
+            window.appData[n21] = { Todd: 27, Jacob: 52, Jake: 33, Stevenson: 68, Tyler: 58, Kevin: 80, LEO: 65, Andy: 85 };
+            
+            const n11 = "Wiring Configuration - Implementation接線配置-實作";
+            window.appData[n11] = { Todd: "X", Jacob: "X", Jake: "X", Stevenson: "✓", Tyler: "X", Kevin: "✓", LEO: "✓", Andy: "✓" };
+            
+            const n25 = "Motor Troubleshooting馬達故障排除-實作";
+            window.appData[n25] = { Todd: "✓", Jacob: "✓", Jake: "X", Stevenson: "✓", Tyler: "✓", Kevin: "✓", LEO: "待測", Andy: "✓" };
+            
+            const n24 = "Instrument Usage儀器使用";
+            window.appData[n24] = { Todd: "✓", Jacob: "✓", Jake: "待測", Stevenson: "✓", Tyler: "✓", Kevin: "✓", LEO: "✓", Andy: "✓" };
+            
+            const n33 = "現場故障排除測試-故障位置 (初階)";
+            window.appData[n33] = { Todd: "✓", Jacob: "✓", Jake: "待測", Stevenson: "待測", Tyler: "待測", Kevin: "✓", LEO: "待測", Andy: "✓" };
+            
+            const n32 = "現場故障排除測試-溫度異常 (初階)";
+            window.appData[n32] = { Todd: "✓", Jacob: "✓", Jake: "待測", Stevenson: "待測", Tyler: "待測", Kevin: "✓", LEO: "待測", Andy: "✓" };
+
             saveToCloud();
         };
 
-        const saveToCloud = async () => {
+        window.saveToCloud = async () => {
             if (!window.state.user) return;
-            const docRef = doc(db, 'artifacts', projectId, 'public', 'data', 'competency_system', 'live_data');
+            const docRef = doc(db, 'artifacts', projectId, 'public', 'data', 'skill_assessment', 'live_v1');
             try {
                 await setDoc(docRef, {
                     topics: window.topics,
@@ -325,40 +337,78 @@
                     appData: window.appData,
                     lastUpdate: new Date().toISOString()
                 });
-            } catch (e) { notify("雲端儲存失敗", "error"); }
+            } catch (e) { notify("雲端存檔失敗", "error"); }
         };
 
-        // 核心邏輯
+        window.handleImport = (e) => {
+            const f = e.target.files[0]; if(!f) return;
+            showLoading(true);
+            const reader = new FileReader(); 
+            reader.onload = async (ev) => {
+                try {
+                    const data = new Uint8Array(ev.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(sheet);
+                    const newMapping = { ...window.itemMapping };
+                    const newAppData = { ...window.appData };
+
+                    jsonData.forEach(row => {
+                        const id = String(row["ID"]).trim();
+                        const excelName = String(row["項目名稱"] || row["考核項目"]).trim();
+                        if (id && excelName) {
+                            const oldInternalName = newMapping[id];
+                            newMapping[id] = excelName;
+                            if (oldInternalName && oldInternalName !== excelName) delete newAppData[oldInternalName];
+                            newAppData[excelName] = newAppData[excelName] || {};
+                            technicians.forEach(tech => {
+                                if (row[tech] !== undefined) {
+                                    let v = row[tech];
+                                    if (v === "✓" || v === "X" || v === "待測") newAppData[excelName][tech] = v;
+                                    else if (!isNaN(v)) newAppData[excelName][tech] = Number(v);
+                                }
+                            });
+                        }
+                    });
+                    const activeNames = Object.values(newMapping);
+                    Object.keys(newAppData).forEach(key => { if (!activeNames.includes(key)) delete newAppData[key]; });
+                    window.itemMapping = newMapping; window.appData = newAppData;
+                    await saveToCloud();
+                    updateUI();
+                    notify("Excel 數據按 ID 同步成功！");
+                } catch(err) { notify("匯入失敗", "error"); } finally { showLoading(false); }
+            };
+            reader.readAsArrayBuffer(f);
+            e.target.value = ''; 
+        };
+
         const calculateStats = () => {
-            let totalPossible = 0, doneCount = 0;
+            let possible = 0, done = 0;
             const techStatus = technicians.map(n => ({ name: n, weightSum: 0, rawSum: 0, doneCount: 0, totalCount: 0 }));
             const topicScores = window.topics.map(t => ({ cn: t.cn, avg: 0 }));
-            const itemPerformance = [];
+            const itemPerf = [];
 
             window.topics.forEach((topic, tIdx) => {
                 let topicTeamSum = 0;
                 topic.items.forEach(itemId => {
-                    const name = window.itemMapping[itemId];
-                    if (!name) return;
-                    let itemSum = 0, itemTestedCount = 0;
+                    const name = window.itemMapping[itemId]; if (!name) return;
+                    let itemSum = 0, itemTested = 0;
                     technicians.forEach((tech, techIdx) => {
-                        totalPossible++;
-                        techStatus[techIdx].totalCount++;
+                        possible++; techStatus[techIdx].totalCount++;
                         const val = window.appData[name]?.[tech] || "待測";
-                        let num = null;
-                        if (val === "✓") num = 100; else if (val === "X") num = 0; else if (typeof val === 'number') num = val;
+                        let num = (val === "✓") ? 100 : (val === "X" ? 0 : (typeof val === 'number' ? val : null));
                         if (num !== null) { 
-                            doneCount++; techStatus[techIdx].doneCount++;
+                            done++; techStatus[techIdx].doneCount++;
                             techStatus[techIdx].weightSum += (num * (topic.weight / 5)); 
                             techStatus[techIdx].rawSum += num;
-                            topicTeamSum += num; itemSum += num; itemTestedCount++;
+                            topicTeamSum += num; itemSum += num; itemTested++;
                         }
                     });
-                    if(itemTestedCount > 0) itemPerformance.push({ id: itemId, cn: name, avg: itemSum / itemTestedCount });
+                    if(itemTested > 0) itemPerf.push({ id: itemId, cn: name, avg: itemSum / itemTested });
                 });
                 topicScores[tIdx].avg = topicTeamSum / (technicians.length * 5);
             });
-            return { progress: (doneCount / totalPossible) * 100, avg: techStatus.reduce((a,b) => a + b.weightSum, 0) / technicians.length, techs: techStatus, topics: topicScores, items: itemPerformance.sort((a,b) => a.avg - b.avg) };
+            return { progress: (done / possible) * 100, avg: techStatus.reduce((a,b) => a + b.weightSum, 0) / technicians.length, techs: techStatus, topics: topicScores, items: itemPerf.sort((a,b) => a.avg - b.avg) };
         };
 
         const renderSummary = (s) => {
@@ -369,8 +419,8 @@
             document.getElementById('stat-attention').textContent = critGaps.length;
 
             const gapDiv = document.getElementById('skill-gaps');
-            gapDiv.innerHTML = s.items.length === 0 ? `<div class="py-10 text-center italic text-slate-300">同步中...</div>` :
-                s.items.slice(0, 4).map(item => `<div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 text-left"><div class="flex flex-col text-left"><span class="text-[9px] font-bold text-rose-400 uppercase">ID ${item.id}</span><span class="text-sm font-bold text-slate-700">${item.cn}</span></div><div class="text-right"><span class="text-rose-500 font-black text-lg">${item.avg.toFixed(1)}%</span></div></div>`).join('');
+            gapDiv.innerHTML = s.items.length === 0 ? `<div class="py-10 text-center text-slate-300 italic">待連線同步...</div>` :
+                s.items.slice(0, 4).map(item => `<div class="flex items-center justify-between p-3 bg-white border rounded-xl shadow-sm"><div class="flex flex-col text-left"><span class="text-[9px] font-bold text-rose-500 uppercase">ID ${item.id}</span><span class="text-xs font-bold text-slate-700">${item.cn}</span></div><div class="text-right font-black text-rose-600">${item.avg.toFixed(1)}%</div></div>`).join('');
 
             const tbody = document.getElementById('personnel-status-body');
             tbody.innerHTML = s.techs.map(t => {
@@ -378,36 +428,36 @@
                 const rawAvg = t.doneCount > 0 ? (t.rawSum / t.doneCount).toFixed(1) : "0.0";
                 return `<tr class="border-b last:border-0 hover:bg-slate-50 transition-colors">
                     <td class="py-4 font-bold text-slate-700 text-left">${t.name}</td>
-                    <td><div class="flex items-center gap-2"><div class="w-24 bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-blue-600 h-full rounded-full" style="width:${perc}%"></div></div><span class="text-xs text-slate-500">${perc.toFixed(0)}%</span></div></td>
-                    <td class="py-4 font-bold text-slate-600 text-base">${rawAvg}%</td>
-                    <td class="py-4 font-black text-blue-600 text-lg">${t.weightSum.toFixed(1)}</td>
-                    <td class="py-4 text-xs text-slate-400 text-right font-medium">${t.doneCount}/${t.totalCount} 已考</td>
+                    <td><div class="flex items-center gap-2"><div class="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width:${perc}%"></div></div><span class="text-[10px] text-slate-400">${perc.toFixed(0)}%</span></div></td>
+                    <td class="py-4 font-bold text-slate-600 text-left">${rawAvg}%</td>
+                    <td class="py-4 font-black text-blue-600 text-lg text-left">${t.weightSum.toFixed(1)}</td>
+                    <td class="py-4 text-xs text-slate-400 text-right">${t.doneCount} 已測</td>
                 </tr>`}).join('');
             renderCharts(s.topics);
-            document.getElementById('mgr-suggestion').textContent = critGaps.length > 0 ? "[推論] 已識別關鍵缺口，請優先排定訓練計畫。" : "[推論] 雲端同步正常運作。";
+            document.getElementById('mgr-suggestion').textContent = critGaps.length > 0 ? "[推論] 系統已按 ID 匹配圖片數據，目前偵測到關鍵缺口。" : "[推論] 雲端同步功能正常。";
         };
 
         let charts = {};
         const renderCharts = (topicData) => {
             const ctx1 = document.getElementById('radarChartSummary').getContext('2d'); if(charts.radar) charts.radar.destroy();
-            charts.radar = new Chart(ctx1, { type: 'radar', data: { labels: topicData.map(t => t.cn), datasets: [{ data: topicData.map(t => t.avg), fill: true, backgroundColor: 'rgba(37, 99, 235, 0.2)', borderColor: 'rgb(37, 99, 235)' }] }, options: { maintainAspectRatio: false, scales: { r: { suggestMin: 0, suggestMax: 100, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
+            charts.radar = new Chart(ctx1, { type: 'radar', data: { labels: topicData.map(t => t.cn), datasets: [{ data: topicData.map(t => t.avg), fill: true, backgroundColor: 'rgba(37, 99, 235, 0.1)', borderColor: '#2563eb', pointBackgroundColor: '#2563eb' }] }, options: { maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
         };
 
         const renderMatrix = () => {
             const container = document.getElementById('matrix-container'); container.innerHTML = '';
-            const corner = document.createElement('div'); corner.className = 'matrix-cell matrix-header'; corner.textContent = `項目 ID / 名稱`; container.appendChild(corner);
+            const corner = document.createElement('div'); corner.className = 'matrix-cell matrix-header'; corner.textContent = `ID / 項目名稱 (同步狀態)`; container.appendChild(corner);
             technicians.forEach(t => { const h = document.createElement('div'); h.className = 'matrix-cell matrix-header'; h.textContent = t; container.appendChild(h); });
             window.topics.forEach((topic, tIdx) => {
-                const sep = document.createElement('div'); sep.className = 'matrix-cell topic-sep py-4 h-auto text-left'; sep.textContent = `領域: ${topic.cn} (${topic.weight*100}%)`; container.appendChild(sep);
+                const sep = document.createElement('div'); sep.className = 'matrix-cell topic-sep py-3 h-auto text-left'; sep.textContent = `領域: ${topic.cn} (${topic.weight*100}%)`; container.appendChild(sep);
                 topic.items.forEach((itemId, iIdx) => {
-                    const name = window.itemMapping[itemId] || `待定項目 ${itemId}`; 
+                    const name = window.itemMapping[itemId]; 
                     const label = document.createElement('div'); label.className = 'matrix-cell matrix-row-label';
                     if(window.state.isEditMode) {
                         const idInput = document.createElement('input'); idInput.className = 'edit-id-input'; idInput.value = itemId; idInput.dataset.tIdx = tIdx; idInput.dataset.iIdx = iIdx;
                         const nameInput = document.createElement('input'); nameInput.className = 'edit-name-input'; nameInput.value = name; nameInput.dataset.itemId = itemId;
                         label.appendChild(idInput); label.appendChild(nameInput);
                     } else {
-                        label.innerHTML = `<span class="text-[9px] font-bold mr-2">ID ${itemId}</span> <div class="text-[10px] font-bold text-left">${name}</div>`;
+                        label.innerHTML = `<span class="text-[9px] font-bold mr-2 text-slate-400">#${itemId}</span> <div class="text-[10px] font-bold text-left">${name}</div>`;
                     }
                     container.appendChild(label);
                     technicians.forEach(tech => {
@@ -426,6 +476,7 @@
 
         window.toggleEditMode = async () => {
             if (window.state.isEditMode) {
+                showLoading(true);
                 const idInputs = document.querySelectorAll('.edit-id-input');
                 const nameInputs = document.querySelectorAll('.edit-name-input');
                 const scoreInputs = document.querySelectorAll('.edit-input');
@@ -433,17 +484,11 @@
                 const newItemMapping = {};
                 const newAppData = {};
 
-                idInputs.forEach(input => {
-                    const { tIdx, iIdx } = input.dataset;
-                    newTopics[tIdx].items[iIdx] = input.value.trim();
-                });
+                idInputs.forEach(input => { const { tIdx, iIdx } = input.dataset; newTopics[tIdx].items[iIdx] = input.value.trim(); });
                 nameInputs.forEach((input, idx) => {
-                    const oldId = input.dataset.itemId;
-                    const newId = idInputs[idx].value.trim();
-                    const oldName = window.itemMapping[oldId];
-                    const newName = input.value.trim() || oldName;
-                    newItemMapping[newId] = newName;
-                    newAppData[newName] = window.appData[oldName] || {};
+                    const oldId = input.dataset.itemId; const newId = idInputs[idx].value.trim();
+                    const oldName = window.itemMapping[oldId]; const newName = input.value.trim() || oldName;
+                    newItemMapping[newId] = newName; newAppData[newName] = window.appData[oldName] || {};
                 });
                 scoreInputs.forEach(i => {
                     const { tech, itemName } = i.dataset;
@@ -455,41 +500,12 @@
                     else if (v === "X" || v.toLowerCase() === "x") newAppData[targetName][tech] = "X";
                     else if (!isNaN(v)) newAppData[targetName][tech] = Number(v);
                 });
-
                 window.topics = newTopics; window.itemMapping = newItemMapping; window.appData = newAppData;
                 await saveToCloud();
                 window.state.isEditMode = false; document.getElementById('edit-text').textContent = '編輯模式';
-                notify("資料同步至雲端成功");
-            } else { 
-                window.state.isEditMode = true; 
-                document.getElementById('edit-text').textContent = '儲存到雲端'; 
-            }
+                showLoading(false); notify("修改已同步至雲端");
+            } else { window.state.isEditMode = true; document.getElementById('edit-text').textContent = '儲存變更'; }
             renderMatrix();
-        };
-
-        window.handleImport = (e) => {
-            const f = e.target.files[0]; if(!f) return;
-            const reader = new FileReader(); 
-            reader.onload = async (ev) => {
-                try {
-                    const data = new Uint8Array(ev.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-                    const mergedData = { ...window.appData };
-                    jsonData.forEach(row => {
-                        const itemName = row["項目名稱"] || row["考核項目"];
-                        if (itemName) {
-                            mergedData[itemName] = mergedData[itemName] || {};
-                            technicians.forEach(tech => { if (row[tech] !== undefined) mergedData[itemName][tech] = row[tech]; });
-                        }
-                    });
-                    window.appData = mergedData;
-                    await saveToCloud();
-                    notify("Excel 匯入完成");
-                } catch(err) { notify("匯入失敗", "error"); }
-            };
-            reader.readAsArrayBuffer(f);
         };
 
         window.exportToExcel = () => {
@@ -502,8 +518,8 @@
                     flat.push(row);
                 });
             });
-            const ws = XLSX.utils.json_to_sheet(flat); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Skills");
-            XLSX.writeFile(wb, `Skill_Backup_${new Date().getTime()}.xlsx`);
+            const ws = XLSX.utils.json_to_sheet(flat); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Matrix");
+            XLSX.writeFile(wb, `Skill_Live_Export_${new Date().getTime()}.xlsx`);
         };
 
         window.switchTab = (t) => {
@@ -516,7 +532,7 @@
 
         window.openReportModal = () => {
             const s = calculateStats();
-            document.getElementById('report-text').textContent = `報告日期: ${new Date().toLocaleDateString()}\n進度: ${s.progress.toFixed(1)}%\n平均: ${s.avg.toFixed(1)}`;
+            document.getElementById('report-text').textContent = `日期: ${new Date().toLocaleDateString()}\n進度: ${s.progress.toFixed(1)}%\n平均: ${s.avg.toFixed(1)}`;
             document.getElementById('reportModal').style.display = "block";
         };
         window.closeReportModal = () => document.getElementById('reportModal').style.display = "none";
@@ -531,8 +547,6 @@
                 charts.topic = new Chart(ctx, { type: 'bar', data: { labels: window.topics.map(t => t.cn), datasets: [{ label: '成熟度 %', data: s.topics.map(t => t.avg), backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } } });
             }
         };
-
-        window.onload = initSystem;
     </script>
 </body>
 </html>
