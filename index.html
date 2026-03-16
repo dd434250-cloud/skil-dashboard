@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skill Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="./firebase-config.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-8">
+  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow p-8">
+    <h1 class="text-2xl font-bold mb-2">Skill Dashboard 已上線 ✅</h1>
+    <p class="text-slate-600 mb-6">這是 GitHub Pages 可運作的起始版本。</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="p-4 rounded-xl bg-slate-50 border">
+        <div class="text-sm text-slate-500">目前模式</div>
+        <div id="mode" class="text-lg font-semibold mt-1">檢查中...</div>
+      </div>
+      <div class="p-4 rounded-xl bg-slate-50 border">
+        <div class="text-sm text-slate-500">App ID</div>
+        <div id="appId" class="text-lg font-semibold mt-1">-</div>
+      </div>
+    </div>
+
+    <p class="text-xs text-slate-500 mt-6">
+      接下來你可以再把完整 dashboard 內容貼回這個 index.html。
+    </p>
+  </div>
+
+  <script>
+    const hasFirebase = !!window.__FIREBASE_CONFIG__;
+    document.getElementById("mode").textContent = hasFirebase
+      ? "Firebase 模式（已設定）"
+      : "本地模式（未設定 Firebase）";
+    document.getElementById("appId").textContent = window.__APP_ID__ || "skill-dashboard-gh-pages";
+  </script>
+</body>
+</html>
