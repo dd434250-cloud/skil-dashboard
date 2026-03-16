@@ -40,7 +40,9 @@
         .score-low { background-color: #93c5fd; color: #1e3a8a; }
         .topic-sep { background-color: #1e293b; font-weight: 900; color: white; grid-column: span 9; text-transform: uppercase; padding: 1rem; text-align: left; }
         input.edit-input { width: 100%; height: 100%; border: 2px solid #3b82f6; text-align: center; font-size: 0.75rem; border-radius: 6px; outline: none; background-color: #f0f9ff; }
-        input.edit-name-input { width: 100%; border: 1px dashed #3b82f6; padding: 2px 4px; font-size: 0.75rem; border-radius: 4px; outline: none; background-color: #fff; color: #1e293b; font-weight: 700; }
+        /* ID 與名稱編輯樣式 */
+        input.edit-id-input { width: 40px; border: 1px dashed #94a3b8; padding: 2px; font-size: 9px; border-radius: 4px; outline: none; text-align: center; margin-right: 8px; }
+        input.edit-name-input { flex: 1; border: 1px dashed #3b82f6; padding: 2px 4px; font-size: 0.75rem; border-radius: 4px; outline: none; background-color: #fff; color: #1e293b; font-weight: 700; }
         
         .sidebar-link.active { background-color: #ffffff; color: #2563eb; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
         .card-shadow { box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
@@ -48,7 +50,7 @@
         .modal-content { background-color: #fff; margin: 5% auto; padding: 2rem; width: 80%; max-width: 800px; border-radius: 1rem; position: relative; }
     </style>
 </head>
-<body class="text-slate-900">
+<body class="text-slate-900 text-left">
 
     <aside class="fixed left-0 top-0 w-64 bg-slate-900 hidden lg:flex flex-col h-screen z-40">
         <div class="p-8 text-left">
@@ -97,11 +99,12 @@
                 </div>
             </div>
 
+            <!-- KPI 指標 -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-white p-6 rounded-2xl card-shadow border-t-4 border-blue-500 text-left">
                     <div class="text-slate-400 text-xs font-bold uppercase mb-1">整體進度 Progress</div>
                     <div class="text-4xl font-black text-slate-800" id="stat-progress">--%</div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3"><div id="progress-bar-inner" class="bg-blue-500 h-full rounded-full transition-all" style="width: 0%"></div></div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3"><div id="progress-bar-inner" class="bg-blue-500 h-full rounded-full transition-all"></div></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl card-shadow border-t-4 border-emerald-500 text-left">
                     <div class="text-slate-400 text-xs font-bold uppercase mb-1">團隊平均分 Team Avg</div>
@@ -119,30 +122,31 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-6 rounded-2xl card-shadow">
-                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">團隊職能均衡度</h3>
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">團隊職能均衡度分析</h3>
                     <div class="chart-container"><canvas id="radarChartSummary"></canvas></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl card-shadow flex flex-col">
-                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">戰略性技能缺口</h3>
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">戰略性技能缺口 (僅列已測低分項)</h3>
                     <div id="skill-gaps" class="space-y-4 flex-1 text-left"></div>
                     <div class="bg-amber-50 p-4 rounded-xl mt-4 border border-amber-100 text-left">
-                        <h4 class="text-xs font-bold text-amber-800 uppercase text-left">管理建議</h4>
-                        <p class="text-xs text-amber-700 mt-1 text-left" id="mgr-suggestion">分析中...</p>
+                        <h4 class="text-xs font-bold text-amber-800 uppercase text-left">管理建議 Recommendation</h4>
+                        <p class="text-xs text-amber-700 mt-1 text-left" id="mgr-suggestion">正在分析數據中...</p>
                     </div>
                 </div>
             </div>
 
+            <!-- 人員進度追蹤 -->
             <div class="bg-white p-6 rounded-2xl card-shadow">
-                <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">人員考核參與度與得分概覽</h3>
+                <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">人員考核參與度與得分概覽 Personnel Progress</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead>
                             <tr class="text-slate-400 uppercase text-[10px] font-bold border-b">
-                                <th class="pb-3 text-left">技術人員</th>
-                                <th class="pb-3 text-left">完成率</th>
-                                <th class="pb-3 text-left">已考項平均分</th>
-                                <th class="pb-3 text-left">加權累積總分</th>
-                                <th class="pb-3 text-right">備註</th>
+                                <th class="pb-3 text-left">技術人員 Name</th>
+                                <th class="pb-3 text-left">完成率 Completion</th>
+                                <th class="pb-3 text-left">已考項平均分 Avg %</th>
+                                <th class="pb-3 text-left">加權累積總分 Score</th>
+                                <th class="pb-3 text-right">備註 Note</th>
                             </tr>
                         </thead>
                         <tbody id="personnel-status-body"></tbody>
@@ -151,9 +155,10 @@
             </div>
         </section>
 
+        <!-- 技能矩陣 (可直接編輯 ID 與名稱) -->
         <section id="tab-matrix" class="hidden space-y-6">
             <div class="flex justify-between items-end">
-                <h2 class="text-2xl font-bold text-left">技能矩陣編輯器 (可直接編輯名稱)</h2>
+                <h2 class="text-2xl font-bold text-left">技能矩陣編輯器 (可編輯 ID 與名稱)</h2>
                 <button id="edit-toggle-btn" onclick="toggleEditMode()" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold transition-all hover:bg-slate-800">
                     <span id="edit-text">編輯模式</span>
                 </button>
@@ -163,7 +168,8 @@
             </div>
         </section>
 
-        <section id="tab-analytics" class="hidden space-y-6">
+        <!-- 深度分析 -->
+        <section id="tab-analytics" class="hidden space-y-6 text-left">
             <div class="bg-white p-8 rounded-2xl card-shadow">
                 <h3 class="font-bold text-slate-700 mb-8 text-left">各主題加權成熟度百分比</h3>
                 <div class="chart-container"><canvas id="topicChart"></canvas></div>
@@ -186,7 +192,9 @@
 
     <script type="module">
         const technicians = ["Todd", "Jacob", "Jake", "Stevenson", "Tyler", "Kevin", "LEO", "Andy"];
-        const topics = [
+        
+        // 初始預設結構
+        const defaultTopics = [
             { id: 1, cn: "接線圖閱讀", weight: 0.15, items: ["1.1", "1.2", "1.3", "1.4", "1.5"] },
             { id: 2, cn: "通用電氣故障排除", weight: 0.15, items: ["2.1", "2.2", "2.3", "2.4", "2.5"] },
             { id: 3, cn: "控制系統故障排除和維修", weight: 0.15, items: ["3.1", "3.2", "3.3", "3.4", "3.5"] },
@@ -197,40 +205,47 @@
             { id: 8, cn: "線路檢查標準", weight: 0.10, items: ["8.1", "8.2", "8.3", "8.4", "8.5"] }
         ];
 
-        // 根據圖片內容更新預設映射
         const defaultItemMapping = {
-            "1.1": "Wiring Configuration-Implementation接線配置-實作",
+            "1.1": "Wiring Configuration - Implementation接線配置-實作",
             "1.2": "電工技師學徒考試",
             "1.3": "basic concepts&definitions基本電學概念",
-            "1.4": "待定項目 1.4", "1.5": "待定項目 1.5",
             "2.1": "motors&Electrical maintenance(電機電氣維護)(二次平均)",
-            "2.2": "系統及馬達檢查",
             "2.3": "General Electrical Troubleshooting一般電器故障排除",
             "2.4": "Instrument Usage儀器使用",
             "2.5": "Motor Troubleshooting馬達故障排除-實作",
-            "3.1": "現場故障測試-真空",
             "3.2": "現場故障排除測試-溫度異常 (初階)",
-            "3.3": "現場故障排除測試-故障位置 (初階)",
-            "3.4": "現場故障測試-電機",
-            "3.5": "安全連鎖意識",
-            "4.1": "E300 控制器", "4.2": "硬體故障診斷", "4.3": "邏輯解釋", "4.4": "EIOC 設置", "4.5": "VFD 設定",
-            "8.1": "電子零件辨識", "8.2": "電機接線實踐", "8.3": "自保持電路", "8.4": "VFD 參數設定", "8.5": "線路配置與排除"
+            "3.3": "現場故障排除測試-故障位置 (初階)"
         };
-        for(let i=5; i<=7; i++) { for(let j=1; j<=5; j++) { let id = `${i}.${j}`; if(!defaultItemMapping[id]) defaultItemMapping[id] = `待定項目 ${id}`; } }
 
-        const DB_KEY = 'skill_db_data_v4';
-        const MAP_KEY = 'skill_db_map_v4';
+        const DB_KEY = 'skill_db_data_v6';
+        const MAP_KEY = 'skill_db_map_v6';
+        const TOPIC_KEY = 'skill_db_topics_v6';
+
         window.appData = {};
         window.itemMapping = {}; 
+        window.topics = [];
         window.state = { currentTab: 'report', isEditMode: false };
 
         const loadLocal = () => {
             const savedData = localStorage.getItem(DB_KEY);
             const savedMap = localStorage.getItem(MAP_KEY);
+            const savedTopics = localStorage.getItem(TOPIC_KEY);
             
-            if (savedMap) window.itemMapping = JSON.parse(savedMap);
-            else window.itemMapping = {...defaultItemMapping};
+            // 載入結構
+            if (savedTopics) window.topics = JSON.parse(savedTopics);
+            else window.topics = JSON.parse(JSON.stringify(defaultTopics));
 
+            // 載入映射
+            if (savedMap) window.itemMapping = JSON.parse(savedMap);
+            else {
+                window.itemMapping = {...defaultItemMapping};
+                // 補全剩餘待定項
+                window.topics.forEach(t => t.items.forEach(id => {
+                    if(!window.itemMapping[id]) window.itemMapping[id] = `待定項目 ${id}`;
+                }));
+            }
+
+            // 載入成績
             if (savedData) window.appData = JSON.parse(savedData);
             else {
                 Object.values(window.itemMapping).forEach(name => {
@@ -244,42 +259,24 @@
         };
 
         const seedInitialData = (records) => {
-            // 根據圖片填入完整數據
-            const n13 = window.itemMapping["1.3"]; 
-            records[n13] = { Todd: 88, Jacob: 88, Jake: 55, Stevenson: 88, Tyler: 90, Kevin: 100, LEO: 80, Andy: 100 };
-            
-            const n23 = window.itemMapping["2.3"];
-            records[n23] = { Todd: 75, Jacob: 70, Jake: 25, Stevenson: 70, Tyler: 75, Kevin: 100, LEO: 70, Andy: 100 };
-            
-            const n21 = window.itemMapping["2.1"];
-            records[n21] = { Todd: 27, Jacob: 52, Jake: 33, Stevenson: 68, Tyler: 58, Kevin: 80, LEO: 65, Andy: 85 };
-            
-            const n11 = window.itemMapping["1.1"];
-            records[n11] = { Todd: "X", Jacob: "X", Jake: "X", Stevenson: "✓", Tyler: "X", Kevin: "✓", LEO: "✓", Andy: "✓" };
-            
-            const n25 = window.itemMapping["2.5"];
-            records[n25] = { Todd: "✓", Jacob: "✓", Jake: "X", Stevenson: "✓", Tyler: "✓", Kevin: "✓", LEO: "待測", Andy: "✓" };
-            
-            const n24 = window.itemMapping["2.4"];
-            records[n24] = { Todd: "✓", Jacob: "✓", Jake: "待測", Stevenson: "✓", Tyler: "✓", Kevin: "✓", LEO: "✓", Andy: "✓" };
-            
-            const n33 = window.itemMapping["3.3"];
-            records[n33] = { Todd: "✓", Jacob: "✓", Jake: "待測", Stevenson: "待測", Tyler: "待測", Kevin: "✓", LEO: "待測", Andy: "✓" };
-            
-            const n32 = window.itemMapping["3.2"];
-            records[n32] = { Todd: "✓", Jacob: "✓", Jake: "待測", Stevenson: "待測", Tyler: "待測", Kevin: "✓", LEO: "待測", Andy: "✓" };
+            const n13 = window.itemMapping["1.3"]; if(n13) records[n13] = { Todd: 88, Jacob: 88, Jake: 55, Stevenson: 88, Tyler: 90, Kevin: 100, LEO: 80, Andy: 100 };
+            const n23 = window.itemMapping["2.3"]; if(n23) records[n23] = { Todd: 75, Jacob: 70, Jake: 25, Stevenson: 70, Tyler: 75, Kevin: 100, LEO: 70, Andy: 100 };
+            const n21 = window.itemMapping["2.1"]; if(n21) records[n21] = { Todd: 27, Jacob: 52, Jake: 33, Stevenson: 68, Tyler: 58, Kevin: 80, LEO: 65, Andy: 85 };
+            const n11 = window.itemMapping["1.1"]; if(n11) records[n11] = { Todd: "X", Jacob: "X", Jake: "X", Stevenson: "✓", Tyler: "X", Kevin: "✓", LEO: "✓", Andy: "✓" };
+            const n25 = window.itemMapping["2.5"]; if(n25) records[n25] = { Todd: "✓", Jacob: "✓", Jake: "X", Stevenson: "✓", Tyler: "✓", Kevin: "✓", LEO: "待測", Andy: "✓" };
         };
 
         const calculateStats = () => {
             let totalPossible = 0, doneCount = 0;
             const techStatus = technicians.map(n => ({ name: n, weightSum: 0, rawSum: 0, doneCount: 0, totalCount: 0 }));
-            const topicScores = topics.map(t => ({ cn: t.cn, avg: 0 }));
+            const topicScores = window.topics.map(t => ({ cn: t.cn, avg: 0 }));
             const itemPerformance = [];
 
-            topics.forEach((topic, tIdx) => {
+            window.topics.forEach((topic, tIdx) => {
                 let topicTeamSum = 0;
                 topic.items.forEach(itemId => {
                     const name = window.itemMapping[itemId];
+                    if (!name) return;
                     let itemSum = 0, itemTestedCount = 0;
                     technicians.forEach((tech, techIdx) => {
                         totalPossible++;
@@ -317,17 +314,18 @@
 
             const tbody = document.getElementById('personnel-status-body');
             tbody.innerHTML = s.techs.map(t => {
+                const perc = t.totalCount > 0 ? (t.doneCount / t.totalCount * 100) : 0;
                 const rawAvg = t.doneCount > 0 ? (t.rawSum / t.doneCount).toFixed(1) : "0.0";
-                return `<tr class="border-b last:border-0 hover:bg-slate-50 transition-colors">
+                return `<tr class="border-b last:border-0 hover:bg-slate-50 transition-colors text-left">
                     <td class="py-4 font-bold text-slate-700 text-left">${t.name}</td>
                     <td class="py-4 text-left">
                         <div class="flex items-center gap-2">
-                            <div class="w-24 bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-blue-600 h-full rounded-full" style="width:${(t.doneCount/t.totalCount*100)}%"></div></div>
-                            <span class="text-xs font-semibold text-slate-500">${(t.doneCount/t.totalCount*100).toFixed(0)}%</span>
+                            <div class="w-24 bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-blue-600 h-full rounded-full" style="width:${perc}%"></div></div>
+                            <span class="text-xs font-semibold text-slate-500">${perc.toFixed(0)}%</span>
                         </div>
                     </td>
-                    <td class="py-4 font-bold text-slate-600 text-base">${rawAvg}%</td>
-                    <td class="py-4 font-black text-blue-600 text-lg">${t.weightSum.toFixed(1)}</td>
+                    <td class="py-4 font-bold text-slate-600 text-base text-left">${rawAvg}%</td>
+                    <td class="py-4 font-black text-blue-600 text-lg text-left">${t.weightSum.toFixed(1)}</td>
                     <td class="py-4 text-xs text-slate-400 text-right">${t.doneCount}/${t.totalCount} 項已完成</td>
                 </tr>`}).join('');
             renderCharts(s.topics);
@@ -343,13 +341,15 @@
             const container = document.getElementById('matrix-container'); container.innerHTML = '';
             const corner = document.createElement('div'); corner.className = 'matrix-cell matrix-header'; corner.textContent = `項目 ID / 名稱`; container.appendChild(corner);
             technicians.forEach(t => { const h = document.createElement('div'); h.className = 'matrix-cell matrix-header'; h.textContent = t; container.appendChild(h); });
-            topics.forEach(topic => {
+            window.topics.forEach((topic, tIdx) => {
                 const sep = document.createElement('div'); sep.className = 'matrix-cell topic-sep py-4 h-auto text-left'; sep.textContent = `領域: ${topic.cn} (${topic.weight*100}%)`; container.appendChild(sep);
-                topic.items.forEach(itemId => {
-                    const name = window.itemMapping[itemId]; const label = document.createElement('div'); label.className = 'matrix-cell matrix-row-label';
+                topic.items.forEach((itemId, iIdx) => {
+                    const name = window.itemMapping[itemId] || `待定項目 ${itemId}`; 
+                    const label = document.createElement('div'); label.className = 'matrix-cell matrix-row-label';
                     if(window.state.isEditMode) {
-                        const ni = document.createElement('input'); ni.className = 'edit-name-input'; ni.value = name; ni.dataset.itemId = itemId;
-                        label.innerHTML = `<span class="text-[9px] font-bold mr-2">ID ${itemId}</span>`; label.appendChild(ni);
+                        const idInput = document.createElement('input'); idInput.className = 'edit-id-input'; idInput.value = itemId; idInput.dataset.tIdx = tIdx; idInput.dataset.iIdx = iIdx;
+                        const nameInput = document.createElement('input'); nameInput.className = 'edit-name-input'; nameInput.value = name; nameInput.dataset.itemId = itemId;
+                        label.appendChild(idInput); label.appendChild(nameInput);
                     } else {
                         label.innerHTML = `<span class="text-[9px] font-bold mr-2">ID ${itemId}</span> <div class="text-[10px] font-bold text-left">${name}</div>`;
                     }
@@ -370,53 +370,92 @@
 
         window.toggleEditMode = () => {
             if (window.state.isEditMode) {
+                // 儲存邏輯
+                const idInputs = document.querySelectorAll('.edit-id-input');
                 const nameInputs = document.querySelectorAll('.edit-name-input');
-                const newData = {};
-                nameInputs.forEach(input => {
-                    const oldName = window.itemMapping[input.dataset.itemId];
-                    const newName = input.value.trim() || oldName;
-                    window.itemMapping[input.dataset.itemId] = newName;
-                    newData[newName] = window.appData[oldName] || {};
-                });
-                window.appData = newData;
                 const scoreInputs = document.querySelectorAll('.edit-input');
-                scoreInputs.forEach(i => {
-                    const { tech } = i.dataset;
-                    let v = i.value.trim();
-                    if (v === "" || v === "待測") window.appData[i.dataset.itemName][tech] = "待測";
-                    else if (v === "✓" || v.toLowerCase() === "v") window.appData[i.dataset.itemName][tech] = "✓";
-                    else if (v === "X" || v.toLowerCase() === "x") window.appData[i.dataset.itemName][tech] = "X";
-                    else if (!isNaN(v)) window.appData[i.dataset.itemName][tech] = Number(v);
+                
+                const newTopics = JSON.parse(JSON.stringify(window.topics));
+                const newItemMapping = {};
+                const newAppData = {};
+
+                // 1. 更新 ID 結構
+                idInputs.forEach(input => {
+                    const { tIdx, iIdx } = input.dataset;
+                    newTopics[tIdx].items[iIdx] = input.value.trim();
                 });
-                localStorage.setItem(DB_KEY, JSON.stringify(window.appData));
+
+                // 2. 更新 名稱映射 與 成績遷移
+                nameInputs.forEach(input => {
+                    const oldId = input.dataset.itemId;
+                    const newId = idInputs[Array.from(nameInputs).indexOf(input)].value.trim();
+                    const oldName = window.itemMapping[oldId];
+                    const newName = input.value.trim() || oldName;
+                    
+                    newItemMapping[newId] = newName;
+                    newAppData[newName] = window.appData[oldName] || {};
+                });
+
+                // 3. 更新 各人員分數
+                scoreInputs.forEach(i => {
+                    const { tech, itemName } = i.dataset;
+                    // 找出該項目現在對應的新名稱
+                    const targetName = nameInputs[Array.from(nameInputs).findIndex(ni => ni.value.trim() === itemName || ni.dataset.itemId === Object.keys(window.itemMapping).find(k => window.itemMapping[k] === itemName))].value.trim();
+                    
+                    let v = i.value.trim();
+                    if (!newAppData[targetName]) newAppData[targetName] = {};
+                    
+                    if (v === "" || v === "待測") newAppData[targetName][tech] = "待測";
+                    else if (v === "✓" || v.toLowerCase() === "v") newAppData[targetName][tech] = "✓";
+                    else if (v === "X" || v.toLowerCase() === "x") newAppData[targetName][tech] = "X";
+                    else if (!isNaN(v)) newAppData[targetName][tech] = Number(v);
+                });
+
+                window.topics = newTopics;
+                window.itemMapping = newItemMapping;
+                window.appData = newAppData;
+
+                localStorage.setItem(TOPIC_KEY, JSON.stringify(window.topics));
                 localStorage.setItem(MAP_KEY, JSON.stringify(window.itemMapping));
+                localStorage.setItem(DB_KEY, JSON.stringify(window.appData));
+                
                 window.state.isEditMode = false; document.getElementById('edit-text').textContent = '編輯模式';
-            } else { window.state.isEditMode = true; document.getElementById('edit-text').textContent = '儲存變更'; }
+            } else { 
+                window.state.isEditMode = true; 
+                document.getElementById('edit-text').textContent = '儲存變更'; 
+            }
             renderMatrix();
         };
 
         window.handleImport = (e) => {
             const f = e.target.files[0]; if(!f) return;
             const reader = new FileReader(); reader.onload = (ev) => {
-                const imp = JSON.parse(ev.target.result);
-                if(imp.appData && imp.itemMapping) { window.appData = imp.appData; window.itemMapping = imp.itemMapping; }
-                else { window.appData = imp; }
-                localStorage.setItem(DB_KEY, JSON.stringify(window.appData));
-                localStorage.setItem(MAP_KEY, JSON.stringify(window.itemMapping));
-                updateUI(); alert("匯入成功");
+                try {
+                    const imp = JSON.parse(ev.target.result);
+                    if(imp.topics) window.topics = imp.topics;
+                    if(imp.itemMapping) window.itemMapping = imp.itemMapping;
+                    if(imp.appData) window.appData = imp.appData;
+                    localStorage.setItem(TOPIC_KEY, JSON.stringify(window.topics));
+                    localStorage.setItem(MAP_KEY, JSON.stringify(window.itemMapping));
+                    localStorage.setItem(DB_KEY, JSON.stringify(window.appData));
+                    updateUI(); alert("匯入成功");
+                } catch(err) { alert("匯入失敗，請檢查格式"); }
             };
             reader.readAsText(f);
         };
 
         window.exportToExcel = () => {
             const flat = [];
-            Object.keys(window.itemMapping).forEach(id => {
-                const name = window.itemMapping[id]; let row = { "ID": id, "考核項目": name };
-                technicians.forEach(t => row[t] = window.appData[name]?.[t] || "待測");
-                flat.push(row);
+            window.topics.forEach(t => {
+                t.items.forEach(id => {
+                    const name = window.itemMapping[id];
+                    let row = { "領域": t.cn, "ID": id, "項目名稱": name };
+                    technicians.forEach(tech => row[tech] = window.appData[name]?.[tech] || "待測");
+                    flat.push(row);
+                });
             });
-            const ws = XLSX.utils.json_to_sheet(flat); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Matrix");
-            XLSX.writeFile(wb, "Skill_Database.xlsx");
+            const ws = XLSX.utils.json_to_sheet(flat); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Skills");
+            XLSX.writeFile(wb, "Skill_Data_Backup.xlsx");
         };
 
         window.switchTab = (t) => {
