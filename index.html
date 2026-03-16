@@ -1,39 +1,517 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skill Dashboard</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="./firebase-config.js"></script>
-</head>
-<body class="bg-slate-100 min-h-screen p-8">
-  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow p-8">
-    <h1 class="text-2xl font-bold mb-2">Skill Dashboard 已上線 ✅</h1>
-    <p class="text-slate-600 mb-6">這是 GitHub Pages 可運作的起始版本。</p>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>電氣技能考核管理總覽 / Management Summary Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="./firebase-config.js"></script>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="p-4 rounded-xl bg-slate-50 border">
-        <div class="text-sm text-slate-500">目前模式</div>
-        <div id="mode" class="text-lg font-semibold mt-1">檢查中...</div>
-      </div>
-      <div class="p-4 rounded-xl bg-slate-50 border">
-        <div class="text-sm text-slate-500">App ID</div>
-        <div id="appId" class="text-lg font-semibold mt-1">-</div>
-      </div>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase 配置與初始化（支援 GitHub Pages）
+        const runtimeFirebaseConfig = typeof __firebase_config !== 'undefined'
+            ? __firebase_config
+            : (window.__FIREBASE_CONFIG__ || null);
+        const parsedFirebaseConfig = runtimeFirebaseConfig
+            ? (typeof runtimeFirebaseConfig === 'string' ? JSON.parse(runtimeFirebaseConfig) : runtimeFirebaseConfig)
+            : null;
+        const hasFirebase = !!parsedFirebaseConfig;
+
+        const app = hasFirebase ? initializeApp(parsedFirebaseConfig) : null;
+        const auth = hasFirebase ? getAuth(app) : null;
+        const db = hasFirebase ? getFirestore(app) : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : (window.__APP_ID__ || 'skill-dashboard-gh-pages');
+
+        window.db = db;
+        window.appId = appId;
+
+        // 核心狀態與數據定義
+        const technicians = ["Todd", "Jacob", "Jake", "Stevenson", "Tyler", "Kevin", "LEO", "Andy"];
+        const topics = [
+            { id: 1, name: "Wiring diagram reading", cn: "接線圖閱讀", weight: 0.15, items: ["1.1", "1.2", "1.3", "1.4", "1.5"] },
+            { id: 2, name: "General electric troubleshooting", cn: "通用電氣故障排除", weight: 0.15, items: ["2.1", "2.2", "2.3", "2.4", "2.5"] },
+            { id: 3, name: "Controls troubleshooting and repair", cn: "控制系統故障排除和維修", weight: 0.15, items: ["3.1", "3.2", "3.3", "3.4", "3.5"] },
+            { id: 4, name: "PLC/DCS comprehension", cn: "PLC/DCS 理解", weight: 0.10, items: ["4.1", "4.2", "4.3", "4.4", "4.5"] },
+            { id: 5, name: "Minor program/ladder manipulation", cn: "輕微的程序/梯形圖操作", weight: 0.10, items: ["5.1", "5.2", "5.3", "5.4", "5.5"] },
+            { id: 6, name: "Major program modification/installation", cn: "重大程式修改/安裝", weight: 0.15, items: ["6.1", "6.2", "6.3", "6.4", "6.5"] },
+            { id: 7, name: "Conduit bending and layout", cn: "導管彎曲和佈局", weight: 0.10, items: ["7.1", "7.2", "7.3", "7.4", "7.5"] },
+            { id: 8, name: "Wiring inspection standards", cn: "線路檢查標準", weight: 0.10, items: ["8.1", "8.2", "8.3", "8.4", "8.5"] }
+        ];
+
+        const itemMapping = {
+            "1.1": { en: "Wiring Configuration-Implementation", cn: "接線配置-實作" },
+            "1.2": { en: "Electrivian/Instrument technician apprentice test", cn: "電工/儀表技師學徒考試" },
+            "1.3": { en: "basic concepts&definitions", cn: "基本概念定義" },
+            "2.1": { en: "motors&Electrical maintenance", cn: "電機電氣維護" },
+            "2.2": { en: "system&motor inspection", cn: "系統及馬達檢查" },
+            "2.3": { en: "General Electrical Troubleshooting", cn: "一般電器故障排除" },
+            "2.4": { en: "Instrument Usage", cn: "儀器使用" },
+            "2.5": { en: "Motor Troubleshooting", cn: "馬達故障排除-實作" },
+            "3.1": { en: "On-site troubleshooting test - vacuum", cn: "現場故障排除測試-真空" },
+            "3.2": { en: "On-site troubleshooting test - temp", cn: "現場故障排除測試-溫度 初階" },
+            "3.3": { en: "On-site troubleshooting test - melt pressure", cn: "現場故障排除測試-故障位置 初階" },
+            "3.4": { en: "On-site troubleshooting test - motor", cn: "現場故障排除測試-電機" },
+            "3.5": { en: "Safety interlock Awareness", cn: "安全連鎖意識" },
+            "4.1": { en: "E300 Controller Implementation", cn: "E300 控制器實現" },
+            "4.2": { en: "Hardware fault diagnosis", cn: "硬體故障診斷" },
+            "4.3": { en: "Logic interpretation", cn: "邏輯解釋" },
+            "4.4": { en: "EIOC setting", cn: "EIOC 設置" },
+            "4.5": { en: "VFD 525/725 setting", cn: "VFD 525/725 設定" },
+            "8.1": { en: "Electronic component identification", cn: "電子零件辨識" },
+            "8.2": { en: "Motor wiring practice", cn: "電機接線實踐" },
+            "8.3": { en: "Self-latching circuit", cn: "自保持電路" },
+            "8.4": { en: "VFD Parameter settings", cn: "VFD 參數設定" },
+            "8.5": { en: "Wiring Configuration & Troubleshooting", cn: "線路配置與故障排除" }
+        };
+
+        window.appData = {};
+        window.state = { currentTab: 'report', isEditMode: false, user: null };
+        let charts = {};
+
+        const dom = {};
+
+        const normalizeMatrixValue = (rawValue) => {
+            const value = String(rawValue ?? '').trim();
+            if (value === '' || value === '待測') return '待測';
+            if (value === '✓' || value.toLowerCase() === 'v') return '✓';
+            if (value === 'X' || value.toLowerCase() === 'x') return 'X';
+            if (!Number.isNaN(Number(value))) {
+                const score = Number(value);
+                return Math.min(100, Math.max(0, score));
+            }
+            return '待測';
+        };
+
+        const cacheDom = () => {
+            dom.syncStatus = document.getElementById('sync-status');
+            dom.currentDate = document.getElementById('current-date');
+            dom.statProgress = document.getElementById('stat-progress');
+            dom.progressBar = document.getElementById('progress-bar-inner');
+            dom.statAvg = document.getElementById('stat-avg-score');
+            dom.statPractical = document.getElementById('stat-practical');
+            dom.statAttention = document.getElementById('stat-attention');
+            dom.skillGaps = document.getElementById('skill-gaps');
+            dom.personnelStatusBody = document.getElementById('personnel-status-body');
+            dom.editText = document.getElementById('edit-text');
+            dom.matrixContainer = document.getElementById('matrix-container');
+            dom.reportText = document.getElementById('report-text');
+            dom.reportModal = document.getElementById('reportModal');
+        };
+
+        // 初始化驗證
+        const initAuth = async () => {
+            if (!auth) return;
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                window.state.user = user;
+                if (user) {
+                    setupRealtimeSync();
+                    const statusEl = dom.syncStatus;
+                    if (statusEl) {
+                        statusEl.textContent = "雲端同步中 (已連線)";
+                        statusEl.classList.remove('text-slate-500');
+                        statusEl.classList.add('text-emerald-500');
+                    }
+                }
+            });
+        }
+
+        // 實時同步邏輯 - 修正段落為偶數 (6 段)
+        const setupRealtimeSync = () => {
+            if (!db) return;
+            // artifacts (1) / appId (2) / public (3) / data (4) / matrix_storage (5) / current_data (6)
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'matrix_storage', 'current_data');
+            onSnapshot(docRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    window.appData = snapshot.data().content || {};
+                } else {
+                    initializeEmptyData();
+                }
+                updateUI();
+            }, (error) => console.error("Firestore Error:", error));
+        };
+
+        const initializeEmptyData = () => {
+            const initial = {};
+            Object.keys(itemMapping).forEach(id => {
+                const n = itemMapping[id].en;
+                initial[n] = {};
+                technicians.forEach(t => initial[n][t] = "待測");
+            });
+            window.appData = initial;
+            updateUI();
+        };
+
+        // 儲存資料到雲端 - 修正段落為偶數 (6 段)
+        window.saveToCloud = async () => {
+            if (!db || !window.state.user) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'matrix_storage', 'current_data');
+            try {
+                await setDoc(docRef, { content: window.appData, lastUpdated: new Date().toISOString() });
+            } catch (e) {
+                console.error("Save failed:", e);
+            }
+        };
+
+        // UI 切換與更新
+        window.switchTab = (tab) => {
+            if (window.state.currentTab === tab) return;
+            document.querySelectorAll('section[id^="tab-"]').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(`btn-${tab}`).classList.add('active');
+            window.state.currentTab = tab;
+            updateUI();
+        };
+
+        const calculateStats = () => {
+            let total = 0, done = 0;
+            const techStatus = technicians.map(n => ({ name: n, weightSum: 0, doneCount: 0, totalCount: 0 }));
+            const topicScores = topics.map(t => ({ id: t.id, cn: t.cn, avg: 0 }));
+            const itemPerformance = [];
+
+            topics.forEach((topic, tIdx) => {
+                let topicTeamSum = 0;
+                topic.items.forEach(itemId => {
+                    const detail = itemMapping[itemId] || { en: `Undefined_${itemId}`, cn: "待定" };
+                    let itemSum = 0, itemCount = 0;
+                    technicians.forEach((tech, techIdx) => {
+                        total++;
+                        techStatus[techIdx].totalCount++;
+                        const val = window.appData[detail.en]?.[tech] || "待測";
+                        let num = null;
+                        if (val === "✓") num = 100;
+                        else if (val === "X") num = 0;
+                        else if (typeof val === 'number') num = val;
+
+                        if (num !== null) {
+                            done++;
+                            techStatus[techIdx].doneCount++;
+                            techStatus[techIdx].weightSum += (num * (topic.weight / 5));
+                            topicTeamSum += num;
+                            itemSum += num;
+                            itemCount++;
+                        }
+                    });
+                    if(itemCount > 0) {
+                        itemPerformance.push({ id: itemId, cn: detail.cn, avg: itemSum / itemCount, tested: true });
+                    }
+                });
+                topicScores[tIdx].avg = topicTeamSum / (technicians.length * 5);
+            });
+            return {
+                progress: (done / total) * 100,
+                avg: techStatus.reduce((a,b) => a + b.weightSum, 0) / technicians.length,
+                techs: techStatus,
+                topics: topicScores,
+                items: itemPerformance.sort((a,b) => a.avg - b.avg)
+            };
+        };
+
+        const renderSummary = (s) => {
+            dom.statProgress.textContent = s.progress.toFixed(1) + '%';
+            dom.progressBar.style.width = s.progress + '%';
+            dom.statAvg.textContent = s.avg.toFixed(1);
+
+            const practicalItems = s.items.filter(i => i.cn.includes("實作") || i.cn.includes("測試"));
+            const pracAvg = practicalItems.reduce((a,b) => a + b.avg, 0) / (practicalItems.length || 1);
+            dom.statPractical.textContent = pracAvg.toFixed(1) + '%';
+
+            const criticalGaps = s.items.filter(i => i.avg < 60).length;
+            dom.statAttention.textContent = criticalGaps;
+
+            const gapDiv = dom.skillGaps;
+            gapDiv.innerHTML = s.items.length === 0 ? `<div class="text-slate-300 italic text-center py-10">尚無考核數據</div>` :
+                s.items.slice(0, 4).map(item => `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div class="flex flex-col text-left">
+                            <span class="text-[9px] font-bold text-rose-400 uppercase">ID ${item.id}</span>
+                            <span class="text-sm font-bold text-slate-700 text-left">${item.cn}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-rose-500 font-black text-lg">${item.avg.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                `).join('');
+
+            const tbody = dom.personnelStatusBody;
+            tbody.innerHTML = s.techs.map(t => {
+                const perc = (t.doneCount / t.totalCount) * 100;
+                return `
+                    <tr class="border-b last:border-0">
+                        <td class="py-4 font-bold text-slate-700 text-left">${t.name}</td>
+                        <td class="py-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-32 bg-slate-100 h-2 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width:${perc}%"></div></div>
+                                <span class="text-xs font-semibold text-slate-500">${perc.toFixed(0)}%</span>
+                            </div>
+                        </td>
+                        <td class="py-4 font-black text-blue-600">${t.weightSum.toFixed(1)}</td>
+                        <td class="py-4 text-xs text-slate-400 text-right">${t.doneCount}/${t.totalCount} 項已完成</td>
+                    </tr>
+                `;
+            }).join('');
+
+            renderRadar(s.topics);
+        };
+
+        const renderRadar = (topicData) => {
+            const ctx = document.getElementById('radarChartSummary').getContext('2d');
+            if(charts.radar) charts.radar.destroy();
+            charts.radar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: topicData.map(t => t.cn),
+                    datasets: [{
+                        label: '成熟度 (%)',
+                        data: topicData.map(t => t.avg),
+                        fill: true,
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                        borderColor: 'rgb(37, 99, 235)',
+                        pointBackgroundColor: 'rgb(37, 99, 235)'
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: { r: { suggestMin: 0, suggestMax: 100, ticks: { display: false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        };
+
+        const renderMatrix = () => {
+            const container = dom.matrixContainer; container.innerHTML = '';
+            const corner = document.createElement('div'); corner.className = 'matrix-cell matrix-header'; corner.textContent = `描述 / ID`; container.appendChild(corner);
+            technicians.forEach(t => { const h = document.createElement('div'); h.className = 'matrix-cell matrix-header'; h.textContent = t; container.appendChild(h); });
+
+            topics.forEach(topic => {
+                const sep = document.createElement('div'); sep.className = 'matrix-cell topic-sep py-4 h-auto text-left px-8'; sep.textContent = `${topic.cn}`; container.appendChild(sep);
+                topic.items.forEach(itemId => {
+                    const detail = itemMapping[itemId] || { en: `Undefined_${itemId}`, cn: "待定" };
+                    const rowLabel = document.createElement('div'); rowLabel.className = 'matrix-cell matrix-row-label';
+                    rowLabel.innerHTML = `<span class="text-[9px] font-bold">ID ${itemId}</span><div class="text-[10px] font-bold">${detail.cn}</div>`;
+                    container.appendChild(rowLabel);
+
+                    technicians.forEach(tech => {
+                        const cell = document.createElement('div'); cell.className = 'matrix-cell'; const val = window.appData[detail.en]?.[tech] || "待測";
+                        if (window.state.isEditMode) {
+                            const input = document.createElement('input');
+                            input.className = 'edit-input';
+                            input.value = val;
+                            input.dataset.item = detail.en;
+                            input.dataset.tech = tech;
+                            cell.appendChild(input);
+                        } else {
+                            cell.textContent = val;
+                            if (val === '✓') cell.classList.add('status-pass'); else if (val === 'X') cell.classList.add('status-fail'); else if (val === '待測') cell.classList.add('status-pending');
+                            else if (typeof val === 'number') { if (val >= 85) cell.classList.add('score-high'); else if (val >= 70) cell.classList.add('score-mid'); else cell.classList.add('score-low'); }
+                        }
+                        container.appendChild(cell);
+                    });
+                });
+            });
+        };
+
+        const updateUI = () => {
+            const stats = calculateStats();
+            if (window.state.currentTab === 'report') renderSummary(stats);
+            if (window.state.currentTab === 'matrix') renderMatrix();
+        };
+
+        window.toggleEditMode = async () => {
+            if (window.state.isEditMode) {
+                const inputs = document.querySelectorAll('.edit-input');
+                inputs.forEach(input => {
+                    const { item, tech } = input.dataset;
+                    window.appData[item][tech] = normalizeMatrixValue(input.value);
+                });
+                await window.saveToCloud();
+                window.state.isEditMode = false;
+                dom.editText.textContent = '編輯模式 / Edit';
+            } else {
+                window.state.isEditMode = true;
+                dom.editText.textContent = '儲存到雲端 / Cloud Save';
+            }
+            renderMatrix();
+        };
+
+        window.onload = async () => {
+            cacheDom();
+            dom.currentDate.textContent = new Date().toLocaleDateString();
+
+            if (hasFirebase) {
+                await initAuth();
+            } else {
+                initializeEmptyData();
+                if (dom.syncStatus) {
+                    dom.syncStatus.textContent = '本地模式（未設定 Firebase）';
+                    dom.syncStatus.classList.remove('text-slate-500');
+                    dom.syncStatus.classList.add('text-amber-400');
+                }
+            }
+        };
+
+        // 彈窗與 Excel 功能
+        window.openReportModal = () => {
+            const s = calculateStats();
+            const report = `電氣技能考核管理報告\n日期: ${new Date().toLocaleDateString()}\n進度: ${s.progress.toFixed(1)}%\n平均: ${s.avg.toFixed(1)} 分`;
+            dom.reportText.textContent = report;
+            dom.reportModal.style.display = "block";
+        };
+        window.closeReportModal = () => dom.reportModal.style.display = "none";
+        window.copyReport = () => {
+            const text = dom.reportText.textContent;
+            navigator.clipboard.writeText(text);
+            alert("已複製報告內容");
+        };
+
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .chart-container { position: relative; width: 100%; height: 320px; }
+        .matrix-grid { display: grid; grid-template-columns: minmax(300px, 3.5fr) repeat(8, minmax(80px, 1fr)); gap: 1px; background-color: #cbd5e1; }
+        .matrix-cell { background-color: white; padding: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600; min-height: 60px; }
+        .matrix-header { background-color: #f8fafc; font-weight: 800; color: #334155; }
+        .matrix-row-label { justify-content: flex-start; padding-left: 1rem; text-align: left; }
+        .status-pass { background-color: #10b981; color: white; }
+        .status-fail { background-color: #ef4444; color: white; }
+        .status-pending { background-color: #e2e8f0; color: #64748b; }
+        .score-high { background-color: #1e40af; color: white; }
+        .score-mid { background-color: #3b82f6; color: white; }
+        .score-low { background-color: #93c5fd; color: #1e3a8a; }
+        .topic-sep { background-color: #1e293b; color: white; grid-column: span 9; padding: 0.75rem; font-size: 0.8rem; text-align: left; }
+        input.edit-input { width: 100%; height: 100%; border: 2px solid #3b82f6; text-align: center; border-radius: 4px; outline: none; }
+        .sidebar-link.active { background-color: #ffffff; color: #2563eb; }
+        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 10% auto; padding: 2rem; width: 80%; max-width: 600px; border-radius: 1rem; }
+    </style>
+</head>
+<body class="text-slate-900">
+
+    <aside class="fixed left-0 top-0 w-64 bg-slate-900 hidden lg:flex flex-col h-screen z-40">
+        <div class="p-8">
+            <div class="flex items-center gap-3 mb-10">
+                <span class="text-3xl">📊</span>
+                <div>
+                    <h1 class="text-lg font-bold text-white leading-none text-left">管理決策系統</h1>
+                    <p class="text-[9px] text-slate-400 mt-1 uppercase text-left">Cloud Integrated</p>
+                </div>
+            </div>
+            <nav class="space-y-2">
+                <button onclick="switchTab('report')" id="btn-report" class="sidebar-link w-full text-left px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3 text-slate-400 active">
+                    <span>🏠</span> 管理總覽 / Summary
+                </button>
+                <button onclick="switchTab('matrix')" id="btn-matrix" class="sidebar-link w-full text-left px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3 text-slate-400">
+                    <span>📋</span> 技能矩陣 / Matrix
+                </button>
+            </nav>
+        </div>
+        <div class="mt-auto p-6 border-t border-slate-800">
+            <div id="sync-status" class="text-[10px] text-slate-500 font-bold mb-4 flex items-center gap-2">
+                連線中...
+            </div>
+        </div>
+    </aside>
+
+    <main class="lg:ml-64 p-4 md:p-8 min-h-screen">
+        <section id="tab-report" class="space-y-6">
+            <div class="flex justify-between items-center">
+                <div class="text-left">
+                    <h2 class="text-3xl font-extrabold text-slate-800 text-left">技能考核管理總結</h2>
+                    <p class="text-slate-500 mt-1 italic text-left">報表生成日期：<span id="current-date">--</span></p>
+                </div>
+                <button onclick="openReportModal()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg">生成報告</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-6 rounded-2xl shadow border-t-4 border-blue-500 text-left">
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">整體進度</div>
+                    <div class="text-4xl font-black text-slate-800" id="stat-progress">--%</div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-3"><div id="progress-bar-inner" class="bg-blue-500 h-full transition-all"></div></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow border-t-4 border-emerald-500 text-left">
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">團隊平均分</div>
+                    <div class="text-4xl font-black text-slate-800" id="stat-avg-score">--</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow border-t-4 border-indigo-500 text-left">
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">實作達標率</div>
+                    <div class="text-4xl font-black text-slate-800" id="stat-practical">--%</div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow border-t-4 border-rose-500 text-left">
+                    <div class="text-slate-400 text-xs font-bold uppercase mb-1">識別弱項</div>
+                    <div class="text-4xl font-black text-rose-600" id="stat-attention">--</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow">
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">團隊職能均衡度</h3>
+                    <div class="chart-container"><canvas id="radarChartSummary"></canvas></div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow">
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">戰略性技能缺口</h3>
+                    <div id="skill-gaps" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow">
+                <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-left">人員考核參與度</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-slate-400 text-[10px] font-bold border-b">
+                            <tr>
+                                <th class="pb-3 text-left">技術人員 Name</th>
+                                <th class="pb-3 text-left">完成率</th>
+                                <th class="pb-3 text-left">得分 Score</th>
+                                <th class="pb-3 text-right">備註</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personnel-status-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-matrix" class="hidden space-y-6">
+            <div class="flex justify-between items-end">
+                <h2 class="text-2xl font-bold text-left">技能矩陣編輯器 (實時雲端同步)</h2>
+                <button id="edit-toggle-btn" onclick="toggleEditMode()" class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold">
+                    <span id="edit-text">編輯模式 / Edit</span>
+                </button>
+            </div>
+            <div class="bg-white p-2 rounded-2xl shadow overflow-x-auto">
+                <div id="matrix-container" class="matrix-grid min-w-[1200px]"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="reportModal" class="modal">
+        <div class="modal-content text-left">
+            <div class="flex justify-between mb-4">
+                <h2 class="text-2xl font-black">管理簡報內容</h2>
+                <button onclick="closeReportModal()">&times;</button>
+            </div>
+            <div id="report-text" class="bg-slate-50 p-6 rounded-lg whitespace-pre-wrap font-mono text-sm text-left"></div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="copyReport()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold">複製報告文字</button>
+            </div>
+        </div>
     </div>
 
-    <p class="text-xs text-slate-500 mt-6">
-      接下來你可以再把完整 dashboard 內容貼回這個 index.html。
-    </p>
-  </div>
-
-  <script>
-    const hasFirebase = !!window.__FIREBASE_CONFIG__;
-    document.getElementById("mode").textContent = hasFirebase
-      ? "Firebase 模式（已設定）"
-      : "本地模式（未設定 Firebase）";
-    document.getElementById("appId").textContent = window.__APP_ID__ || "skill-dashboard-gh-pages";
-  </script>
 </body>
 </html>
